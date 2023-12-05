@@ -1,18 +1,13 @@
 # app.py
-from flask import Flask, render_template, request, redirect, url_for, flash, session
-from flask_mysqldb import MySQL
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from passlib.hash import sha256_crypt
 from datetime import datetime
+from model.User import User
 
 app = Flask(__name__)
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'swanthuzaw'
-app.config['MYSQL_PASSWORD'] = 'swanthuzaw123@'
-app.config['MYSQL_DB'] = 'flask-register'
-app.config['SECRET_KEY'] = 'flask-register'
-app.config['SESSION_TYPE'] = 'filesystem'
 
-mysql = MySQL(app)
+def hash_password(password):
+    return sha256_crypt.using(rounds=1000).hash(password)
 
 @app.route('/')
 def index():
@@ -21,24 +16,22 @@ def index():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        email = request.form['email']
-        username = request.form['username']
-        password = request.form['password']
-        dob = datetime.strptime(request.form['dob'], '%Y-%m-%d')
-        phone_number = request.form['phone_number']
+        email = request.json.get('email')
+        username = request.json.get('username')
+        password = request.json.get('password')
+        dob = datetime.strptime(request.json.get('dob'), '%Y-%m-%d')
+        phone_number = request.json.get('phone_number')
 
-        cursor = mysql.connection.cursor()
-        hashed_password = sha256_crypt.hash(password)
+        hashed_password = hash_password(password)
 
-        cursor.execute("INSERT INTO users (email, username, password, dob, phone_number) VALUES (%s, %s, %s, %s, %s)",
-                       (email, username, hashed_password, dob, phone_number))
-        mysql.connection.commit()
-        cursor.close()
+        result = User.register(email,username,hashed_password,dob,phone_number)
 
-        flash('Registration successful!', 'success')
-        return redirect(url_for('index'))
+        print(result)
 
-    return render_template('register.html')
+        if result:
+            return jsonify({"success": True, "message": "user added"}), 200
+        else:
+            return jsonify({"success": False, "message": "invalid request format"}), 400
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
