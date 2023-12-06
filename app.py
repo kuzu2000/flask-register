@@ -21,10 +21,16 @@ def register():
         password = request.json.get('password')
         dob = datetime.strptime(request.json.get('dob'), '%Y-%m-%d')
         phone_number = request.json.get('phone_number')
+        gender = request.json.get('gender')
+        country = request.json.get('country')
+        preferred_language = request.json.get('preferred_language')
 
         hashed_password = hash_password(password)
 
-        result = User.register(email,username,hashed_password,dob,phone_number)
+        if User.user_exists(username):
+            return jsonify({"success": False, "message": "Username already exists"}), 400
+
+        result = User.register(email,username,hashed_password,dob,phone_number, country, preferred_language, gender)
 
         print(result)
 
