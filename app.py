@@ -39,43 +39,5 @@ def register():
         else:
             return jsonify({"success": False, "message": "invalid request format"}), 400
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        username = request.form['username']
-        entered_password = request.form['password']
-
-        cursor = mysql.connection.cursor()
-        result = cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
-
-        if result > 0:
-            user_data = cursor.fetchone()
-            hashed_password_db = user_data[3]  # Assuming password is at index 2
-
-            if sha256_crypt.verify(entered_password, hashed_password_db):
-                session['logged_in'] = True
-                session['username'] = user_data[1]  # Assuming username is at index 1
-                flash('Login successful!', 'success')
-                return redirect(url_for('dashboard'))
-            else:
-                flash('Invalid password', 'danger')
-        else:
-            flash('Username not found', 'danger')
-
-    return render_template('login.html')
-
-@app.route('/dashboard')
-def dashboard():
-    if 'logged_in' in session:
-        return f"Hello, {session['username']}! This is your dashboard."
-    else:
-        return redirect(url_for('login'))
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    flash('You have been logged out', 'info')
-    return redirect(url_for('login'))
-
 if __name__ == '__main__':
     app.run(debug=True)
